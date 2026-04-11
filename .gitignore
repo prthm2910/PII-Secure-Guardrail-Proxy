@@ -8,3 +8,13 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Scratchpad
+scratchpad/
+
+# Code Review Graph
+.code-review-graph
+
+# IDEs
+.vscode/
+.idea/
