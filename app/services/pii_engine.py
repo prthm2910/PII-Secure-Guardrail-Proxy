@@ -59,7 +59,7 @@ class AadhaarRecognizer(EntityRecognizer):
             context=["aadhaar", "uid", "aadhaar card"]
         )
         # Ultra-flexible regex to handle any 12 digits with separators like space, dash, dot, underscore
-        self.pattern = re.compile(r"\b(?:\d[-.\s_]*){11}\d\b")
+        self.pattern = re.compile(r"\b(?:\d[-.\s_]*){11}\d\b(?![-\.\s_]*\d)")
 
     def load(self) -> None:
         pass
