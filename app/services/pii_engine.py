@@ -59,7 +59,7 @@ class AadhaarRecognizer(EntityRecognizer):
             context=["aadhaar", "uid", "aadhaar card"]
         )
         # Ultra-flexible regex to handle any 12 digits with separators like space, dash, dot, underscore
-        self.pattern = re.compile(r"\b(?:\d[-.\s_]*){11}\d\b")
+        self.pattern = re.compile(r"\b(?:\d[-.\s_]*){11}\d\b(?![-\.\s_]*\d)")
 
     def load(self) -> None:
         pass
@@ -101,7 +101,7 @@ class PanRecognizer(PatternRecognizer):
 class UpiRecognizer(PatternRecognizer):
     def __init__(self):
         # Refined UPI regex to avoid catching parts of emails
-        patterns = [Pattern(name="upi", regex=r"\b[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{3,64}\b", score=0.8)]
+        patterns = [Pattern(name="upi", regex=r"\b[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{3,64}(?!\.[a-zA-Z]{2,})\b", score=0.8)]
         super().__init__(supported_entity="IN_UPI", patterns=patterns, context=["upi", "vpa"], name="UpiRecognizer")
 
 # --- Engine Implementation ---
