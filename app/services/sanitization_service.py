@@ -1,5 +1,7 @@
 import uuid
 from typing import Tuple, Dict, List
+import re
+
 from app.services.pii_engine import pii_engine
 from app.services.redis_service import redis_service
 
