@@ -111,11 +111,11 @@ class SanitizationService:
             # Replace exact match
             desanitized_text = desanitized_text.replace(token, original_value)
             
-            # Replace variations with spaces (e.g., [ IN_PAN_1 ])
-            # This is a bit of a heuristic to be resilient to LLM mutations
+            # Replace variations with spaces (e.g., [ IN_PAN_1 ], [IN_PAN_1 ])
+            # Using regex to be resilient to LLM mutations
             token_content = token.strip("[]")
-            variation = f"[ {token_content} ]"
-            desanitized_text = desanitized_text.replace(variation, original_value)
+            pattern = re.compile(rf"\\[\\s*{re.escape(token_content)}\\s*\\]")
+            desanitized_text = pattern.sub(original_value, desanitized_text)
             
         return desanitized_text
 
