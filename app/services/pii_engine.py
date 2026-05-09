@@ -38,7 +38,7 @@ def validate_verhoeff(number: str) -> bool:
         # Avoid obvious sequences
         if clean_number == clean_number[0] * 12 or clean_number == "123456789012" or clean_number == "123412341234":
             return False
-            
+
         c = 0
         ll = [int(x) for x in clean_number]
         for i, x in enumerate(reversed(ll)):
@@ -58,7 +58,7 @@ class AadhaarRecognizer(EntityRecognizer):
             name="AadhaarRecognizer",
             context=["aadhaar", "uid", "aadhaar card"]
         )
-        # Ultra-flexible regex to handle any 12 digits with separators like space, dash, dot, underscore
+        # Ultra-flexible regex to handle any 12 digits with separators like space, dash, dot, underscore        
         self.pattern = re.compile(r"\b(?:\d[-.\s_]*){11}\d\b(?![-\.\s_]*\d)")
 
     def load(self) -> None:
@@ -77,7 +77,7 @@ class AadhaarRecognizer(EntityRecognizer):
                     original_score=0.85,
                     textual_explanation="Validated using Verhoeff algorithm."
                 )
-                
+
                 res = RecognizerResult(
                     entity_type="IN_AADHAAR",
                     start=match.start(),
@@ -92,11 +92,44 @@ class AadhaarRecognizer(EntityRecognizer):
                 results.append(res)
         return results
 
-class PanRecognizer(PatternRecognizer):
+class PanRecognizer(EntityRecognizer):
+    """Custom Recognizer for PAN with structural validation."""
     def __init__(self):
-        # Added case-insensitivity to PAN regex
-        patterns = [Pattern(name="pan", regex=r"\b[a-zA-Z]{5}[0-9]{4}[a-zA-Z]{1}\b", score=0.9)]
-        super().__init__(supported_entity="IN_PAN", patterns=patterns, context=["pan", "tax id"], name="PanRecognizer")
+        super().__init__(
+            supported_entities=["IN_PAN"],
+            supported_language="en",
+            name="PanRecognizer",
+            context=["pan", "tax id"]
+        )
+
+    def load(self) -> None:
+        pass
+
+    def analyze(self, text: str, entities: List[str], nlp_artifacts=None) -> List[RecognizerResult]:
+        results = []
+        # PAN Pattern: 5 letters, 4 digits, 1 letter
+        for match in re.finditer(r"[a-zA-Z]{5}[0-9]{4}[a-zA-Z]{1}", text):
+            match_str = match.group()
+            # 4th character (index 3) is the Status of the Holder
+            status_char = match_str[3].upper()
+            
+            # Official Status Codes: P, C, H, F, A, T, B, L, J, G
+            if status_char in "PCHFABTLJG":
+                explanation = AnalysisExplanation(
+                    recognizer=self.name,
+                    original_score=0.9,
+                    textual_explanation=f"Validated PAN structure with status code '{status_char}'."
+                )
+                
+                res = RecognizerResult(
+                    entity_type="IN_PAN",
+                    start=match.start(),
+                    end=match.end(),
+                    score=0.9,
+                    analysis_explanation=explanation
+                )
+                results.append(res)
+        return results
 
 class UpiRecognizer(PatternRecognizer):
     def __init__(self):
@@ -110,12 +143,12 @@ class PIIEngine:
     def __init__(self):
         registry = RecognizerRegistry()
         registry.load_predefined_recognizers()
-        
+
         # Add custom classes
         registry.add_recognizer(AadhaarRecognizer())
         registry.add_recognizer(PanRecognizer())
         registry.add_recognizer(UpiRecognizer())
-        
+
         # Add simple pattern recognizers
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_MOBILE",
@@ -123,7 +156,7 @@ class PIIEngine:
             context=["mobile"],
             name="MobileRecognizer"
         ))
-        
+
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_IFSC",
             # Added case-insensitivity to IFSC regex
@@ -139,7 +172,7 @@ class PIIEngine:
             text=text,
             language="en",
             entities=[
-                "PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "LOCATION", 
+                "PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "LOCATION",
                 "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", "CREDIT_CARD"
             ]
         )
