@@ -101,14 +101,19 @@ class PanRecognizer(EntityRecognizer):
             name="PanRecognizer",
             context=["pan", "tax id"]
         )
+        # Pre-compiled pattern with word boundaries for efficiency and precision
+        self.pattern = re.compile(r"\b[a-zA-Z]{5}[0-9]{4}[a-zA-Z]{1}\b")
 
     def load(self) -> None:
         pass
 
     def analyze(self, text: str, entities: List[str], nlp_artifacts=None) -> List[RecognizerResult]:
         results = []
+        if not entities or "IN_PAN" not in entities:
+            return results
+
         # PAN Pattern: 5 letters, 4 digits, 1 letter
-        for match in re.finditer(r"[a-zA-Z]{5}[0-9]{4}[a-zA-Z]{1}", text):
+        for match in self.pattern.finditer(text):
             match_str = match.group()
             # 4th character (index 3) is the Status of the Holder
             status_char = match_str[3].upper()
@@ -126,7 +131,11 @@ class PanRecognizer(EntityRecognizer):
                     start=match.start(),
                     end=match.end(),
                     score=0.9,
-                    analysis_explanation=explanation
+                    analysis_explanation=explanation,
+                    recognition_metadata={
+                        RecognizerResult.RECOGNIZER_IDENTIFIER_KEY: self.id,
+                        RecognizerResult.RECOGNIZER_NAME_KEY: self.name
+                    }
                 )
                 results.append(res)
         return results
@@ -154,13 +163,13 @@ class PIIEngine:
     def __init__(self):
         # Start with an empty registry to have absolute control
         registry = RecognizerRegistry()
-        
+
         # Add custom classes (Our primary defense)
         registry.add_recognizer(AadhaarRecognizer())
         registry.add_recognizer(PanRecognizer())
         registry.add_recognizer(UpiRecognizer())
         registry.add_recognizer(EmailRecognizer())
-        
+
         # Add a custom Phone/Mobile recognizer to override built-in one
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_MOBILE",
@@ -168,7 +177,7 @@ class PIIEngine:
             context=["mobile"],
             name="MobileRecognizer"
         ))
-        
+
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_IFSC",
             patterns=[Pattern(name="ifsc", regex=r"\b[a-zA-Z]{4}0[a-zA-Z0-9]{6}\b", score=0.9)],
@@ -179,7 +188,7 @@ class PIIEngine:
         # We can add back only the essential predefined ones manually if needed,
         # but for now, we want strict control over PAN, AADHAAR, EMAIL, and MOBILE.
         # This prevents built-in generic ones from causing false positives.
-        
+
         self.analyzer = AnalyzerEngine(registry=registry)
 
     def analyze(self, text: str) -> List[RecognizerResult]:
