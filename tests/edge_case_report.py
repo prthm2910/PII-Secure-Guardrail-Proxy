@@ -1,9 +1,19 @@
 import sys
 import os
 from datetime import datetime
+from unittest.mock import MagicMock
 
 # Add the project root to sys.path
 sys.path.append(os.getcwd())
+
+# Mock redis_service BEFORE importing sanitization_service
+mock_redis = MagicMock()
+mock_redis.store_tokens.return_value = True
+mock_redis.get_tokens.return_value = {}
+
+# Mock the module in sys.modules
+import app.services.redis_service
+app.services.redis_service.redis_service = mock_redis
 
 from app.services.sanitization_service import sanitization_service
 from app.services.pii_engine import pii_engine
@@ -20,8 +30,8 @@ class EdgeCaseTester:
             },
             {
                 "category": "False Negatives (Obfuscation)",
-                "description": "Mixed-case PAN",
-                "input": "PAN: abcde1234f",
+                "description": "Mixed-case PAN (Valid Status 'P')",
+                "input": "PAN: abcpk1234d", # Valid status 'p'
                 "expected_entities": ["IN_PAN"]
             },
             {
@@ -35,7 +45,7 @@ class EdgeCaseTester:
                 "description": "Email with spaces (common in LLM errors)",
                 "input": "Contact me at test @ example . com",
                 "expected_entities": ["EMAIL_ADDRESS"],
-                "note": "Standard Presidio might fail here without custom regex."
+                "note": "Custom ResilientEmailRecognizer catches this."
             },
             
             # --- FALSE POSITIVES (Lookalikes) ---
@@ -55,11 +65,11 @@ class EdgeCaseTester:
             },
             {
                 "category": "False Positives (Lookalikes)",
-                "description": "Random Alphanumeric (PAN lookalike)",
-                "input": "Model serial: GHIJK9999L",
+                "description": "Random Alphanumeric (PAN lookalike - Invalid status 'X')",
+                "input": "Model serial: GHIXX9999L", # 'X' is invalid status
                 "expected_entities": [],
                 "avoid_entities": ["IN_PAN"],
-                "note": "PAN regex might catch this if it doesn't validate structure well."
+                "note": "PAN regex should ignore this as 'X' is not a valid status."
             },
 
             # --- NAIVE QUERIES (Direct disclosure) ---
@@ -96,8 +106,6 @@ class EdgeCaseTester:
             detected_entities = list(set([res.entity_type for res in analysis_results]))
             
             # Use sanitization_service for full flow
-            # (Note: we need to mock Redis if it's not running, or just ignore the storage part)
-            # For this report, we'll try to run it. If Redis is down, we might need a fallback.
             try:
                 sanitized_text, request_id, token_map, entity_summary, masked_entities = sanitization_service.sanitize(case['input'])
             except Exception as e:
