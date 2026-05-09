@@ -28,6 +28,10 @@ VERHOEFF_TABLE_P = (
     (7, 0, 4, 6, 9, 1, 3, 2, 5, 8)
 )
 
+# --- Optimized GSTIN Constants ---
+_GSTIN_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_GSTIN_CHAR_MAP = {c: i for i, c in enumerate(_GSTIN_CHARS)}
+
 def validate_verhoeff(number: str) -> bool:
     """Validate a 12-digit Aadhaar number using the Verhoeff algorithm."""
     try:
@@ -48,26 +52,24 @@ def validate_verhoeff(number: str) -> bool:
         return False
 
 def validate_gstin_checksum(gstin: str) -> bool:
-    """Luhn Mod 36 validation for GSTIN."""
-    chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    char_map = {c: i for i, c in enumerate(chars)}
+    """Luhn Mod 36 validation for GSTIN. Optimized with divmod."""
     # Clean input: remove whitespace and convert to upper
     gstin = "".join(gstin.split()).upper()
     if len(gstin) != 15:
         return False
     
     try:
-        data = [char_map[c] for c in gstin[:14]]
+        data = [_GSTIN_CHAR_MAP[c] for c in gstin[:14]]
         check_char = gstin[14]
         
         total = 0
         for i, val in enumerate(data):
             factor = 2 if (i + 1) % 2 == 0 else 1
-            product = val * factor
-            total += (product // 36) + (product % 36)
+            q, r = divmod(val * factor, 36)
+            total += q + r
         
         remainder = total % 36
-        expected = chars[(36 - remainder) % 36]
+        expected = _GSTIN_CHARS[(36 - remainder) % 36]
         return check_char == expected
     except (KeyError, IndexError):
         return False

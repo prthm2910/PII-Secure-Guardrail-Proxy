@@ -5,6 +5,11 @@ class NormalizationService:
     """
     Handles pre-processing of text to prevent common PII obfuscation bypasses.
     Focus: Invisible characters, Full-width Unicode, and basic Normalization.
+    
+    ⚠️ WARNING: NFKC normalization is used to standardise Unicode. 
+    This is a destructive operation that may transform non-PII characters 
+    (e.g., superscripts, ligatures) into their standard equivalents. 
+    Chosen as a strategic trade-off for higher PII detection recall.
     """
     def __init__(self):
         # Regex for invisible/control characters (Zero-width space, non-joiners, etc.)

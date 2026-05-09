@@ -15,6 +15,24 @@ class SanitizationService:
         elif entity_type == "IN_AADHAAR":
             # XXXX-XXXX-1234
             return "XXXX-XXXX-" + original_value[-4:]
+        elif entity_type == "IN_GSTIN":
+            # 27AAAAA****A1Z2
+            return original_value[:7] + "****" + original_value[-4:]
+        elif entity_type == "IN_TAN":
+            # ABCD****G
+            return original_value[:4] + "****" + original_value[-1]
+        elif entity_type == "IN_DEMAT":
+            # CDSL: 1234**********56, NSDL: IN12**********34
+            return original_value[:4] + "*" * 10 + original_value[-2:]
+        elif entity_type == "IN_BANK_ACC":
+            # **********1234
+            return "*" * (len(original_value) - 4) + original_value[-4:]
+        elif entity_type == "IN_MF_FOLIO":
+            # 123/*****/0
+            parts = original_value.split("/")
+            if len(parts) > 1:
+                return f"{parts[0]}/*****/{parts[-1]}"
+            return original_value[:3] + "*****"
         elif entity_type == "EMAIL_ADDRESS":
             # a*****@gmail.com
             parts = original_value.split("@")
