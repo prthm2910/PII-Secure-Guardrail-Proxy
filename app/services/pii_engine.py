@@ -131,6 +131,17 @@ class PanRecognizer(EntityRecognizer):
                 results.append(res)
         return results
 
+class EmailRecognizer(PatternRecognizer):
+    """Custom Email Recognizer that handles spaces injected by LLMs."""
+    def __init__(self):
+        # Matches test@example.com and test @ example . com
+        patterns = [Pattern(
+            name="email_recognizer", 
+            regex=r"\b[a-zA-Z0-9._%+-]+\s*@\s*[a-zA-Z0-9.-]+\s*\.\s*[a-zA-Z]{2,}\b", 
+            score=0.8
+        )]
+        super().__init__(supported_entity="EMAIL_ADDRESS", patterns=patterns, context=["email", "contact"], name="ResilientEmailRecognizer")
+
 class UpiRecognizer(PatternRecognizer):
     def __init__(self):
         # Refined UPI regex to avoid catching parts of emails
@@ -148,6 +159,7 @@ class PIIEngine:
         registry.add_recognizer(AadhaarRecognizer())
         registry.add_recognizer(PanRecognizer())
         registry.add_recognizer(UpiRecognizer())
+        registry.add_recognizer(EmailRecognizer())
 
         # Add simple pattern recognizers
         registry.add_recognizer(PatternRecognizer(
