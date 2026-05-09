@@ -4,6 +4,7 @@ import re
 
 from app.services.pii_engine import pii_engine
 from app.services.redis_service import redis_service
+from app.services.normalization_service import normalization_service
 
 class SanitizationService:
     def mask_for_logs(self, text: str, entity_type: str, original_value: str) -> str:
@@ -39,7 +40,12 @@ class SanitizationService:
         Returns: (sanitized_text, request_id, token_map, entity_summary, masked_entities)
         """
         request_id = str(uuid.uuid4())
-        results = pii_engine.analyze(text)
+        
+        # Pre-process text to handle obfuscation (Homoglyphs, Unicode, Invisible chars)
+        clean_text = normalization_service.normalize(text)
+        
+        # We analyze the clean text
+        results = pii_engine.analyze(clean_text)
         
         token_map = {}
         entity_summary = {}
@@ -67,10 +73,10 @@ class SanitizationService:
         # 2. Sort by start position (reverse) to replace in text safely
         final_results = sorted(filtered_results, key=lambda x: x.start, reverse=True)
         
-        sanitized_text = text
+        sanitized_text = clean_text
         for res in final_results:
             entity_type = res.entity_type
-            original_value = text[res.start:res.end]
+            original_value = clean_text[res.start:res.end]
             
             # Update entity summary for audit logs
             entity_summary[entity_type] = entity_summary.get(entity_type, 0) + 1
@@ -83,7 +89,7 @@ class SanitizationService:
             token_map[token] = original_value
             
             # Create masked version for logs
-            masked_entities[token] = self.mask_for_logs(text, entity_type, original_value)
+            masked_entities[token] = self.mask_for_logs(clean_text, entity_type, original_value)
             
             # Replace in text
             sanitized_text = sanitized_text[:res.start] + token + sanitized_text[res.end:]
