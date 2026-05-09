@@ -140,6 +140,17 @@ class PanRecognizer(EntityRecognizer):
                 results.append(res)
         return results
 
+class CreditCardRecognizer(PatternRecognizer):
+    """Custom Credit Card Recognizer to replace built-in functionality."""
+    def __init__(self):
+        # Basic Luhn-compatible or common credit card patterns
+        patterns = [Pattern(
+            name="credit_card", 
+            regex=r"\b(?:\d[ -]*?){13,16}\b", 
+            score=0.8
+        )]
+        super().__init__(supported_entity="CREDIT_CARD", patterns=patterns, context=["credit card", "card number"], name="CreditCardRecognizer")
+
 class EmailRecognizer(PatternRecognizer):
     """Custom Email Recognizer that handles spaces injected by LLMs."""
     def __init__(self):
@@ -163,13 +174,14 @@ class PIIEngine:
     def __init__(self):
         # Start with an empty registry to have absolute control
         registry = RecognizerRegistry()
-
+        
         # Add custom classes (Our primary defense)
         registry.add_recognizer(AadhaarRecognizer())
         registry.add_recognizer(PanRecognizer())
         registry.add_recognizer(UpiRecognizer())
         registry.add_recognizer(EmailRecognizer())
-
+        registry.add_recognizer(CreditCardRecognizer())
+        
         # Add a custom Phone/Mobile recognizer to override built-in one
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_MOBILE",
@@ -177,7 +189,7 @@ class PIIEngine:
             context=["mobile"],
             name="MobileRecognizer"
         ))
-
+        
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_IFSC",
             patterns=[Pattern(name="ifsc", regex=r"\b[a-zA-Z]{4}0[a-zA-Z0-9]{6}\b", score=0.9)],
@@ -188,7 +200,7 @@ class PIIEngine:
         # We can add back only the essential predefined ones manually if needed,
         # but for now, we want strict control over PAN, AADHAAR, EMAIL, and MOBILE.
         # This prevents built-in generic ones from causing false positives.
-
+        
         self.analyzer = AnalyzerEngine(registry=registry)
 
     def analyze(self, text: str) -> List[RecognizerResult]:
@@ -196,7 +208,7 @@ class PIIEngine:
             text=text,
             language="en",
             entities=[
-                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", "EMAIL_ADDRESS"
+                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", "EMAIL_ADDRESS", "CREDIT_CARD"
             ]
         )
 
