@@ -419,6 +419,11 @@ class PIIEngine:
         # Add custom classes (Our primary defense)
         registry.add_recognizer(AadhaarRecognizer())
         registry.add_recognizer(PanRecognizer())
+        registry.add_recognizer(GstinRecognizer())
+        registry.add_recognizer(TanRecognizer())
+        registry.add_recognizer(DematRecognizer())
+        registry.add_recognizer(BankAccountRecognizer())
+        registry.add_recognizer(FolioRecognizer())
         registry.add_recognizer(UpiRecognizer())
         registry.add_recognizer(EmailRecognizer())
         registry.add_recognizer(CreditCardRecognizer())
@@ -449,7 +454,9 @@ class PIIEngine:
             text=text,
             language="en",
             entities=[
-                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", "EMAIL_ADDRESS", "CREDIT_CARD"
+                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", 
+                "EMAIL_ADDRESS", "CREDIT_CARD", "IN_GSTIN", "IN_TAN", 
+                "IN_DEMAT", "IN_BANK_ACC", "IN_MF_FOLIO"
             ]
         )
 
