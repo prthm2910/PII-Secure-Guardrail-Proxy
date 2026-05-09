@@ -152,31 +152,34 @@ class UpiRecognizer(PatternRecognizer):
 
 class PIIEngine:
     def __init__(self):
+        # Start with an empty registry to have absolute control
         registry = RecognizerRegistry()
-        registry.load_predefined_recognizers()
-
-        # Add custom classes
+        
+        # Add custom classes (Our primary defense)
         registry.add_recognizer(AadhaarRecognizer())
         registry.add_recognizer(PanRecognizer())
         registry.add_recognizer(UpiRecognizer())
         registry.add_recognizer(EmailRecognizer())
-
-        # Add simple pattern recognizers
+        
+        # Add a custom Phone/Mobile recognizer to override built-in one
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_MOBILE",
             patterns=[Pattern(name="mobile", regex=r"\b(?:\+91[\-\s]?)?[6-9]\d{9}\b", score=0.75)],
             context=["mobile"],
             name="MobileRecognizer"
         ))
-
+        
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_IFSC",
-            # Added case-insensitivity to IFSC regex
             patterns=[Pattern(name="ifsc", regex=r"\b[a-zA-Z]{4}0[a-zA-Z0-9]{6}\b", score=0.9)],
             context=["ifsc"],
             name="IfscRecognizer"
         ))
 
+        # We can add back only the essential predefined ones manually if needed,
+        # but for now, we want strict control over PAN, AADHAAR, EMAIL, and MOBILE.
+        # This prevents built-in generic ones from causing false positives.
+        
         self.analyzer = AnalyzerEngine(registry=registry)
 
     def analyze(self, text: str) -> List[RecognizerResult]:
@@ -184,8 +187,7 @@ class PIIEngine:
             text=text,
             language="en",
             entities=[
-                "PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "LOCATION",
-                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", "CREDIT_CARD"
+                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", "EMAIL_ADDRESS"
             ]
         )
 
