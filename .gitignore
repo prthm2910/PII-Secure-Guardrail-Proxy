@@ -23,3 +23,6 @@ tasks/
 # IDEs
 .vscode/
 .idea/
+
+#Miscellenous
+.planning/
