@@ -288,6 +288,99 @@ class DematRecognizer(EntityRecognizer):
                 )
         return results
 
+class BankAccountRecognizer(EntityRecognizer):
+    """Custom Recognizer for Bank Account numbers with contextual anchoring."""
+    def __init__(self):
+        super().__init__(
+            supported_entities=["IN_BANK_ACC"],
+            supported_language="en",
+            name="BankAccountRecognizer"
+        )
+        self.pattern = re.compile(r"\b\d{9,18}\b")
+        self.anchors = ["Acc", "Account", "IFSC", "NEFT", "RTGS", "Beneficiary"]
+        self.context_window = 50
+
+    def load(self) -> None:
+        pass
+
+    def analyze(self, text: str, entities: List[str], nlp_artifacts=None) -> List[RecognizerResult]:
+        results = []
+        if not entities or "IN_BANK_ACC" not in entities:
+            return results
+
+        for match in self.pattern.finditer(text):
+            search_start = max(0, match.start() - self.context_window - 20)
+            search_end = min(len(text), match.end() + self.context_window + 20)
+            search_area = text[search_start:search_end]
+            
+            if any(re.search(re.escape(anchor), search_area, re.IGNORECASE) for anchor in self.anchors):
+                explanation = AnalysisExplanation(
+                    recognizer=self.name,
+                    original_score=0.8,
+                    textual_explanation="Validated as Bank Account due to nearby keyword match."
+                )
+                results.append(
+                    RecognizerResult(
+                        entity_type="IN_BANK_ACC",
+                        start=match.start(),
+                        end=match.end(),
+                        score=0.8,
+                        analysis_explanation=explanation,
+                        recognition_metadata={
+                            RecognizerResult.RECOGNIZER_IDENTIFIER_KEY: self.id,
+                            RecognizerResult.RECOGNIZER_NAME_KEY: self.name
+                        }
+                    )
+                )
+        return results
+
+class FolioRecognizer(EntityRecognizer):
+    """Custom Recognizer for Mutual Fund Folio Numbers."""
+    def __init__(self):
+        super().__init__(
+            supported_entities=["IN_MF_FOLIO"],
+            supported_language="en",
+            name="FolioRecognizer",
+            context=["folio", "mutual fund", "amc"]
+        )
+        self.pattern = re.compile(r"\b[a-zA-Z0-9/-]{5,20}\b")
+        self.context_keywords = ["folio", "mutual fund", "amc"]
+
+    def load(self) -> None:
+        pass
+
+    def analyze(self, text: str, entities: List[str], nlp_artifacts=None) -> List[RecognizerResult]:
+        results = []
+        if not entities or "IN_MF_FOLIO" not in entities:
+            return results
+
+        for match in self.pattern.finditer(text):
+            match_str = match.group()
+            if not any(char.isdigit() for char in match_str):
+                continue
+            
+            search_area = text[max(0, match.start() - 30):min(len(text), match.end() + 10)].lower()
+            if any(keyword.lower() in search_area for keyword in self.context_keywords):
+                explanation = AnalysisExplanation(
+                    recognizer=self.name,
+                    original_score=0.8,
+                    textual_explanation="Detected Folio pattern with anchor keyword in context."
+                )
+                results.append(
+                    RecognizerResult(
+                        entity_type="IN_MF_FOLIO",
+                        start=match.start(),
+                        end=match.end(),
+                        score=0.8,
+                        analysis_explanation=explanation,
+                        recognition_metadata={
+                            RecognizerResult.RECOGNIZER_IDENTIFIER_KEY: self.id,
+                            RecognizerResult.RECOGNIZER_NAME_KEY: self.name
+                        }
+                    )
+                )
+        return results
+
 class CreditCardRecognizer(PatternRecognizer):
     """Custom Credit Card Recognizer to replace built-in functionality."""
     def __init__(self):
