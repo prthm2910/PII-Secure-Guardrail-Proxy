@@ -13,7 +13,7 @@ class RedisService:
             ssl=settings.REDIS_SSL,
             decode_responses=True
         )
-        self.ttl = 60 # 60 seconds self-destruct
+        self.ttl = 3600 # 1 hour self-destruct for token persistence
 
     def store_tokens(self, request_id: str, token_map: Dict[str, str]):
         """Store PII mapping in Redis with TTL."""
