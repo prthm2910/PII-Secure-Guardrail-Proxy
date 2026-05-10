@@ -14,8 +14,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies
-RUN uv sync --frozen --no-cache
+# Install dependencies and download spaCy model
+RUN uv sync --frozen --no-cache && uv run python -m spacy download en_core_web_sm
 
 # Copy project files
 COPY . .
