@@ -828,6 +828,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
     { name = "redis" },
+    { name = "spacy" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
 ]
@@ -847,6 +848,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.2.1" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "redis", specifier = ">=5.0.3" },
+    { name = "spacy", specifier = ">=3.8.14" },
     { name = "sqlalchemy", specifier = ">=2.0.29" },
     { name = "uvicorn", specifier = ">=0.29.0" },
 ]

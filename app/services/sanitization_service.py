@@ -132,12 +132,9 @@ class SanitizationService:
         
         for token in sorted_tokens:
             original_value = token_map[token]
-            # Replace exact match
-            desanitized_text = desanitized_text.replace(token, original_value)
-            
-            # Replace variations with spaces (e.g., [ IN_PAN_1 ], [IN_PAN_1 ])
-            # Using regex to be resilient to LLM mutations
+            # Resilient replacement: handles [TOKEN], [ TOKEN ], [TOKEN ], etc.
             token_content = token.strip("[]")
+            # Using a simplified word-boundary or bracket-match regex
             pattern = re.compile(rf"\[\s*{re.escape(token_content)}\s*\]")
             desanitized_text = pattern.sub(original_value, desanitized_text)
             
