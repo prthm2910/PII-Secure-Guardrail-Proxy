@@ -323,7 +323,7 @@ class BankAccountRecognizer(EntityRecognizer):
                     entity_type="IN_BANK_ACC",
                     start=match.start(),
                     end=match.end(),
-                    score=0.4, # Low base score, needs context boost
+                    score=0.3, # Low base score, needs context boost
                     analysis_explanation=explanation,
                     recognition_metadata={
                         RecognizerResult.RECOGNIZER_IDENTIFIER_KEY: self.id,
@@ -359,7 +359,7 @@ class FolioRecognizer(EntityRecognizer):
             
             explanation = AnalysisExplanation(
                 recognizer=self.name,
-                original_score=0.4,
+                original_score=0.3,
                 textual_explanation="Detected Folio pattern, awaiting context boost."
             )
             results.append(
@@ -367,7 +367,7 @@ class FolioRecognizer(EntityRecognizer):
                     entity_type="IN_MF_FOLIO",
                     start=match.start(),
                     end=match.end(),
-                    score=0.4,
+                    score=0.3,
                     analysis_explanation=explanation,
                     recognition_metadata={
                         RecognizerResult.RECOGNIZER_IDENTIFIER_KEY: self.id,
@@ -457,7 +457,7 @@ class PIIEngine:
             text=text,
             language="en",
             entities=[
-                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", 
+                "IN_PAN", "IN_AADHAAR", "IN_UPI", "IN_MOBILE", "IN_IFSC", "PERSON",
                 "EMAIL_ADDRESS", "CREDIT_CARD", "IN_GSTIN", "IN_TAN", 
                 "IN_DEMAT", "IN_BANK_ACC", "IN_MF_FOLIO"
             ]
