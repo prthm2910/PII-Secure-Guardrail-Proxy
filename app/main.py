@@ -1,8 +1,9 @@
 import time
-from fastapi import FastAPI, BackgroundTasks, Request
+from fastapi import FastAPI, BackgroundTasks, Request, HTTPException
 from app.core.config import settings
 from app.services.sanitization_service import sanitization_service
 from app.services.audit_service import audit_service
+from app.models.schemas import ChatCompletionRequest
 import httpx
 
 app = FastAPI(
