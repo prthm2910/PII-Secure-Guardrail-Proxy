@@ -21,22 +21,20 @@ async def health_check():
     }
 
 @app.post("/proxy/v1/chat/completions")
-async def proxy_chat_completions(request: Request, background_tasks: BackgroundTasks):
+async def proxy_chat_completions(payload: ChatCompletionRequest, background_tasks: BackgroundTasks):
     start_time = time.time()
-    payload = await request.json()
     
     # 1. Extract and Sanitize User Content
-    messages = payload.get("messages", [])
     request_id = None
     all_entity_summaries = {}
     all_masked_entities = {}
     
-    for msg in messages:
-        if msg.get("role") == "user":
-            original_content = msg.get("content", "")
-            sanitized_content, req_id, token_map, entity_summary, masked_entities = sanitization_service.sanitize(original_content)
-            msg["content"] = sanitized_content
-            request_id = req_id
+    for msg in payload.messages:
+        if msg.role == "user":
+            original_content = msg.content
+            sanitized_content, req_id, _, entity_summary, masked_entities = sanitization_service.sanitize(original_content)
+            msg.content = sanitized_content
+            request_id = request_id or req_id
             for k, v in entity_summary.items():
                 all_entity_summaries[k] = all_entity_summaries.get(k, 0) + v
             all_masked_entities.update(masked_entities)
