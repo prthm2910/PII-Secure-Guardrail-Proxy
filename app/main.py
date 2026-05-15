@@ -53,9 +53,9 @@ async def proxy_chat_completions(payload: ChatCompletionRequest, background_task
     
     # 3. Desanitize the LLM Response
     for choice in llm_response.get("choices", []):
-        msg = choice.get("message", {})
-        if msg.get("role") == "assistant":
-            msg["content"] = sanitization_service.desanitize(msg["content"], request_id)
+        msg_resp = choice.get("message", {})
+        if msg_resp.get("role") == "assistant":
+            msg_resp["content"] = sanitization_service.desanitize(msg_resp["content"], request_id)
 
     # 4. Async Audit Logging
     latency_ms = (time.time() - start_time) * 1000
