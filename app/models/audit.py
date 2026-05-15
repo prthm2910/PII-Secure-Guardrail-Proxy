@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON, Float
+from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from app.db.session import Base
 
@@ -12,6 +13,6 @@ class AuditLog(Base):
     latency_ms = Column(Float)
     status = Column(String)
     # JSONB for entity summary: {"PAN": 1, "UPI": 1}
-    entity_summary = Column(JSON)
+    entity_summary = Column(JSONB)
     # JSONB for masked entities: {"[IN_PAN_1]": "ABCDE****F"}
-    masked_entities = Column(JSON)
+    masked_entities = Column(JSONB)

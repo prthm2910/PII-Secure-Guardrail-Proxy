@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.audit import AuditLog
 from app.db.session import SessionLocal
-import time
+import logging
 
 class AuditService:
     def log_request(
@@ -26,10 +26,9 @@ class AuditService:
             )
             db.add(db_log)
             db.commit()
-            db.refresh(db_log)
         except Exception as e:
             # In production, we'd log this to a file or monitoring tool
-            print(f"Failed to write audit log: {e}")
+            logging.error(f"Failed to write audit log: {e}")
             db.rollback()
         finally:
             db.close()
