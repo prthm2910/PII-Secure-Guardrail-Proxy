@@ -2,14 +2,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
+    # App
+    PROJECT_NAME: str
+    DEBUG: bool
+    HOST: str
+    PORT: int
+    APP_MODULE: str
+
     # Redis
     REDIS_HOST: str
     REDIS_PORT: int
     REDIS_DB: str
-    REDIS_PASSWORD: str
+    REDIS_PASSWORD: Optional[str] = None
     REDIS_SSL: bool
-    
-    # Feature Flags / Logic
+
+    # PII Settings
     TOKEN_TTL: int
     NORMALIZE_UNICODE: bool
     ENFORCE_STRICT_CHECKSUMS: bool
@@ -20,11 +27,11 @@ class Settings(BaseSettings):
     POSTGRES_SERVER: str
     POSTGRES_PORT: str
     POSTGRES_DB: str
-    
+
     # Database URLs
     DATABASE_URL: str
     DIRECT_DATABASE_URL: str
-    
+
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         return self.DATABASE_URL or f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
