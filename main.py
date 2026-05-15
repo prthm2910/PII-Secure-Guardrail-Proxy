@@ -1,6 +1,13 @@
-def main():
-    print("Hello from pii-proxy-middleware-project!")
+import uvicorn
+from app.core.config import settings
 
+def main():
+    uvicorn.run(
+        settings.APP_MODULE,
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.DEBUG
+    )
 
 if __name__ == "__main__":
     main()
