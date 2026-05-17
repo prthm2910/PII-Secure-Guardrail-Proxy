@@ -128,11 +128,10 @@ async def proxy_chat_completions(
             latency_ms=latency_ms,
             status=f"UPSTREAM_ERROR"
         )
-        raise HTTPException(status_code=500, detail=f"Groq Provider Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Upstream LLM provider error")
 
     # 3. Desanitize the LLM Response (only if not skipped)
     # We create a deep copy of choices for the redacted view
-    import copy
     redacted_choices = copy.deepcopy(llm_response.get("choices", []))
     
     if not skip_pii:
