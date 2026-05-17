@@ -89,6 +89,6 @@ async def get_request_details(request_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving request details")
     finally:
         db.close()
