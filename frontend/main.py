@@ -43,7 +43,7 @@ if hasattr(st.session_state, "pending_input"):
 if input_val:
     # Trigger Step 1: Sanitize
     fm.reset_state()
-    asyncio.run(fm.run_sanitize(input_val))
+    fm.run_sanitize(input_val)
     st.rerun()
 
 # Layout
@@ -80,5 +80,5 @@ if query["request_id"]:
 # Step 2 Trigger: Background LLM Call
 if query["status"] == FlowStatus.SANITIZED.value:
     with st.spinner("LLM is processing..."):
-        asyncio.run(fm.run_chat())
+        fm.run_chat()
         st.rerun()
