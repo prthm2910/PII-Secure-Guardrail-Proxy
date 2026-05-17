@@ -64,7 +64,7 @@ async def get_stats():
             "recent_activity": recent_activity
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Stats Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving stats")
     finally:
         db.close()
 
