@@ -1,6 +1,7 @@
 import time
 import uuid
 import httpx
+import copy
 from datetime import datetime
 from groq import AsyncGroq
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
