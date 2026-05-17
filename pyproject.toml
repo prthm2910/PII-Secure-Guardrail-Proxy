@@ -16,6 +16,9 @@ dependencies = [
     "pydantic-settings>=2.2.1",
     "python-dotenv>=1.0.1",
     "spacy>=3.8.14",
+    "openai>=2.37.0",
+    "streamlit>=1.57.0",
+    "groq>=1.2.0",
 ]
 
 [dependency-groups]

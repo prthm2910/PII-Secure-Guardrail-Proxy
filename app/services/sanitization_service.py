@@ -5,6 +5,7 @@ import re
 from app.services.pii_engine import pii_engine
 from app.services.redis_service import redis_service
 from app.services.normalization_service import normalization_service
+from app.core.logging import logger
 
 class SanitizationService:
     def mask_for_logs(self, text: str, entity_type: str, original_value: str) -> str:
@@ -51,13 +52,14 @@ class SanitizationService:
         
         return "[MASKED]"
 
-    def sanitize(self, text: str) -> Tuple[str, str, Dict[str, str], Dict[str, int], Dict[str, str]]:
+    def sanitize(self, text: str, request_id: str = None) -> Tuple[str, str, Dict[str, str], Dict[str, int], Dict[str, str]]:
         """
         Sanitize text by replacing PII with reversible tokens and generating masked versions for logs.
         Handles overlaps by prioritizing longest matches first.
         Returns: (sanitized_text, request_id, token_map, entity_summary, masked_entities)
         """
-        request_id = str(uuid.uuid4())
+        request_id = request_id or str(uuid.uuid4())
+        logger.debug(f"Req: {request_id} | Sanitization started")
         
         # Pre-process text to handle obfuscation (Homoglyphs, Unicode, Invisible chars)
         clean_text = normalization_service.normalize(text)
@@ -114,6 +116,7 @@ class SanitizationService:
             
         # Store tokens in Redis with TTL
         if token_map:
+            logger.debug(f"Req: {request_id} | {len(token_map)} tokens generated")
             redis_service.store_tokens(request_id, token_map)
             
         return sanitized_text, request_id, token_map, entity_summary, masked_entities
@@ -122,8 +125,10 @@ class SanitizationService:
         """Restore original PII values using tokens stored in Redis.
         Handles cases where LLM might add spaces inside brackets like '[ IN_PAN_1 ]'.
         """
+        logger.debug(f"Req: {request_id} | Desanitization started")
         token_map = redis_service.get_tokens(request_id)
         if not token_map:
+            logger.warning(f"Req: {request_id} | No token map found for desanitization")
             return sanitized_text
             
         desanitized_text = sanitized_text
@@ -138,6 +143,7 @@ class SanitizationService:
             pattern = re.compile(rf"\[\s*{re.escape(token_content)}\s*\]")
             desanitized_text = pattern.sub(original_value, desanitized_text)
             
+        logger.debug(f"Req: {request_id} | Desanitization complete")
         return desanitized_text
 
 sanitization_service = SanitizationService()

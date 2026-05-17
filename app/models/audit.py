@@ -16,3 +16,7 @@ class AuditLog(Base):
     entity_summary = Column(JSONB)
     # JSONB for masked entities: {"[IN_PAN_1]": "ABCDE****F"}
     masked_entities = Column(JSONB)
+    # JSONB for the final messages sent to LLM
+    sanitized_messages = Column(JSONB)
+    # JSONB for chronological technical events
+    technical_timeline = Column(JSONB)

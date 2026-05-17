@@ -1,12 +1,6 @@
 import pytest
 from app.services.pii_engine import pii_engine
 
-def test_pan_detection():
-    text = "My PAN is ABCDE1234F"
-    results = pii_engine.analyze(text)
-    entities = [res.entity_type for res in results]
-    assert "IN_PAN" in entities
-
 def test_aadhaar_valid_detection():
     # Valid Aadhaar with Verhoeff: 366215485509
     text = "My Aadhaar is 366215485509"
@@ -27,14 +21,16 @@ def test_upi_detection():
     entities = [res.entity_type for res in results]
     assert "IN_UPI" in entities
 
-def test_email_detection():
-    text = "Email me at test@example.com"
+def test_pan_detection():
+    # Valid PAN with Individual status 'P' at index 3: ABCPE1234F
+    text = "My PAN is ABCPE1234F"
     results = pii_engine.analyze(text)
     entities = [res.entity_type for res in results]
-    assert "EMAIL_ADDRESS" in entities
+    assert "IN_PAN" in entities
 
 def test_mixed_pii():
-    text = "Name: John Doe, PAN: ABCDE1234F, Email: john@doe.com"
+    # Valid PAN with Individual status 'P' at index 3: ABCPE1234F
+    text = "Name: John Doe, PAN: ABCPE1234F, Email: john@doe.com"
     results = pii_engine.analyze(text)
     entities = [res.entity_type for res in results]
     assert "PERSON" in entities

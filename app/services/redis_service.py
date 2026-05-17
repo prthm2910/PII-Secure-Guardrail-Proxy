@@ -2,9 +2,11 @@ import redis
 import json
 from typing import Optional, Dict
 from app.core.config import settings
+from app.core.logging import logger
 
 class RedisService:
     def __init__(self):
+        logger.info(f"Connecting to Redis at {settings.REDIS_HOST}:{settings.REDIS_PORT} (SSL={settings.REDIS_SSL})")
         self.client = redis.Redis(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
@@ -19,6 +21,7 @@ class RedisService:
         """Store PII mapping in Redis with TTL."""
         if not token_map:
             return
+        logger.debug(f"Req: {request_id} | Storing {len(token_map)} tokens in Redis")
         key = f"req:{request_id}:tokens"
         self.client.set(key, json.dumps(token_map), ex=self.ttl)
 
@@ -27,7 +30,9 @@ class RedisService:
         key = f"req:{request_id}:tokens"
         data = self.client.get(key)
         if data:
+            logger.debug(f"Req: {request_id} | Tokens retrieved from Redis")
             return json.loads(data)
+        logger.warning(f"Req: {request_id} | No tokens found in Redis")
         return None
 
     def delete_tokens(self, request_id: str):

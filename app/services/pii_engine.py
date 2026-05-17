@@ -4,6 +4,8 @@ from presidio_analyzer.recognizer_registry import RecognizerRegistry
 from presidio_analyzer.nlp_engine import SpacyNlpEngine
 import re
 
+from app.core.logging import logger
+
 # Verhoeff Algorithm for Aadhaar Validation
 VERHOEFF_TABLE_D = (
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
@@ -377,13 +379,13 @@ class FolioRecognizer(EntityRecognizer):
             )
         return results
 
-class CreditCardRecognizer(PatternRecognizer):
+class InCreditCardRecognizer(PatternRecognizer):
     """Custom Credit Card Recognizer to replace built-in functionality."""
     def __init__(self):
         patterns = [Pattern(name="credit_card", regex=r"\b(?:\d[ -]*?){13,16}\b", score=0.8)]
-        super().__init__(supported_entity="CREDIT_CARD", patterns=patterns, context=["credit card", "card number"], name="CreditCardRecognizer")
+        super().__init__(supported_entity="CREDIT_CARD", patterns=patterns, context=["credit card", "card number"], name="InCreditCardRecognizer")
 
-class EmailRecognizer(PatternRecognizer):
+class InEmailRecognizer(PatternRecognizer):
     """Custom Email Recognizer with Lookahead to distinguish from UPI."""
     def __init__(self):
         # Must have a .xxx suffix to be an email (e.g. .com, .in)
@@ -392,9 +394,9 @@ class EmailRecognizer(PatternRecognizer):
             regex=r"\b[a-zA-Z0-9._%+-]+\s*@\s*[a-zA-Z0-9.-]+\s*\.\s*[a-zA-Z]{2,}\b", 
             score=0.85
         )]
-        super().__init__(supported_entity="EMAIL_ADDRESS", patterns=patterns, context=["email", "contact"], name="EmailRecognizer")
+        super().__init__(supported_entity="EMAIL_ADDRESS", patterns=patterns, context=["email", "contact"], name="InEmailRecognizer")
 
-class UpiRecognizer(PatternRecognizer):
+class InUpiRecognizer(PatternRecognizer):
     """Custom UPI Recognizer with Negative Lookahead for TLDs."""
     def __init__(self):
         # Must NOT have a .xxx suffix (e.g. @okaxis but not @okaxis.com)
@@ -403,21 +405,25 @@ class UpiRecognizer(PatternRecognizer):
             regex=r"\b[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{3,64}(?!\.[a-zA-Z]{2,})\b", 
             score=0.9
         )]
-        super().__init__(supported_entity="IN_UPI", patterns=patterns, context=["upi", "vpa"], name="UpiRecognizer")
+        super().__init__(supported_entity="IN_UPI", patterns=patterns, context=["upi", "vpa"], name="InUpiRecognizer")
 
 # --- Engine Implementation ---
 
 class PIIEngine:
     def __init__(self):
+        logger.info("Initializing PIIEngine with Presidio and Spacy (en_core_web_sm)")
         # 1. Initialize Hybrid NLP Engine (spaCy)
         configuration = {
             "nlp_engine_name": "spacy",
             "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}],
         }
         nlp_engine = SpacyNlpEngine(models=configuration["models"])
+        nlp_engine.load()
         
         # 2. Setup Registry with Hybrid Recognizers
+        # Load default recognizers (includes PERSON via Spacy, etc.)
         registry = RecognizerRegistry()
+        registry.load_predefined_recognizers(nlp_engine=nlp_engine)
         
         # Add custom classes
         registry.add_recognizer(AadhaarRecognizer())
@@ -427,10 +433,11 @@ class PIIEngine:
         registry.add_recognizer(DematRecognizer())
         registry.add_recognizer(BankAccountRecognizer())
         registry.add_recognizer(FolioRecognizer())
-        registry.add_recognizer(UpiRecognizer())
-        registry.add_recognizer(EmailRecognizer())
-        registry.add_recognizer(CreditCardRecognizer())
+        registry.add_recognizer(InUpiRecognizer())
+        registry.add_recognizer(InEmailRecognizer())
+        registry.add_recognizer(InCreditCardRecognizer())
         
+        # Add pattern-based custom recognizers
         registry.add_recognizer(PatternRecognizer(
             supported_entity="IN_MOBILE",
             patterns=[Pattern(name="mobile", regex=r"\b(?:\+91[\-\s]?)?[6-9]\d{9}\b", score=0.75)],
@@ -453,6 +460,7 @@ class PIIEngine:
         )
 
     def analyze(self, text: str) -> List[RecognizerResult]:
+        logger.debug(f"PIIEngine analyzing text (len={len(text)})")
         return self.analyzer.analyze(
             text=text,
             language="en",
