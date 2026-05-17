@@ -42,18 +42,17 @@ class FlowManager:
         st.session_state.current_query["raw"] = text
         st.session_state.current_query["status"] = FlowStatus.SANITIZING.value
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                response = await client.post(f"{self.base_url}/sanitize", json={"content": text})
-                if response.status_code == 200:
-                    data = response.json()
-                    st.session_state.current_query["sanitized"] = data["sanitized_content"]
-                    st.session_state.current_query["request_id"] = data["request_id"]
-                    st.session_state.current_query["status"] = FlowStatus.SANITIZED.value
-                else:
-                    self._handle_error(f"Sanitize failed: {response.text}")
-            except Exception as e:
-                self._handle_error(f"Sanitize connection error: {e}")
+        try:
+            response = await self.client.post(f"{self.base_url}/sanitize", json={"content": text})
+            if response.status_code == 200:
+                data = response.json()
+                st.session_state.current_query["sanitized"] = data["sanitized_content"]
+                st.session_state.current_query["request_id"] = data["request_id"]
+                st.session_state.current_query["status"] = FlowStatus.SANITIZED.value
+            else:
+                self._handle_error(f"Sanitize failed: {response.text}")
+        except Exception as e:
+            self._handle_error(f"Sanitize connection error: {e}")
 
     async def run_chat(self):
         """Step 2: Get LLM completion using the existing request_id."""
