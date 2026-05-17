@@ -1,5 +1,4 @@
 import httpx
-import asyncio
 from enum import Enum
 from typing import Optional, Dict, Any
 import os
@@ -14,14 +13,14 @@ class FlowStatus(Enum):
     ERROR = "error"
 
 @st.cache_resource
-def get_async_client():
-    return httpx.AsyncClient(timeout=70.0)
+def get_client():
+    return httpx.Client(timeout=70.0)
 
 class FlowManager:
     def __init__(self):
         self.base_url = os.getenv("API_BASE_URL", "http://localhost:8000/proxy/v1")
         self.llm_model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
-        self.client = get_async_client()
+        self.client = get_client()
         
         if "current_query" not in st.session_state:
             self.reset_state()
@@ -37,13 +36,13 @@ class FlowManager:
             "error_message": None
         }
 
-    async def run_sanitize(self, text: str):
+    def run_sanitize(self, text: str):
         """Step 1: Eagerly sanitize the input."""
         st.session_state.current_query["raw"] = text
         st.session_state.current_query["status"] = FlowStatus.SANITIZING.value
         
         try:
-            response = await self.client.post(f"{self.base_url}/sanitize", json={"content": text})
+            response = self.client.post(f"{self.base_url}/sanitize", json={"content": text})
             if response.status_code == 200:
                 data = response.json()
                 st.session_state.current_query["sanitized"] = data["sanitized_content"]
@@ -54,7 +53,7 @@ class FlowManager:
         except Exception as e:
             self._handle_error(f"Sanitize connection error: {e}")
 
-    async def run_chat(self):
+    def run_chat(self):
         """Step 2: Get LLM completion using the existing request_id."""
         query = st.session_state.current_query
         if not query["request_id"]:
@@ -69,7 +68,7 @@ class FlowManager:
         }
         
         try:
-            response = await self.client.post(f"{self.base_url}/chat/completions", json=payload)
+            response = self.client.post(f"{self.base_url}/chat/completions", json=payload)
             if response.status_code == 200:
                 data = response.json()
                 st.session_state.current_query["redacted"] = data["redacted_choices"][0]["message"]["content"]
