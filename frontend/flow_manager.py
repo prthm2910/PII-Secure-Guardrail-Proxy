@@ -68,18 +68,17 @@ class FlowManager:
             "model": self.llm_model
         }
         
-        async with httpx.AsyncClient(timeout=70.0) as client:
-            try:
-                response = await client.post(f"{self.base_url}/chat/completions", json=payload)
-                if response.status_code == 200:
-                    data = response.json()
-                    st.session_state.current_query["redacted"] = data["redacted_choices"][0]["message"]["content"]
-                    st.session_state.current_query["desanitized"] = data["choices"][0]["message"]["content"]
-                    st.session_state.current_query["status"] = FlowStatus.COMPLETED.value
-                else:
-                    self._handle_error(f"LLM failed: {response.text}")
-            except Exception as e:
-                self._handle_error(f"LLM connection error: {e}")
+        try:
+            response = await self.client.post(f"{self.base_url}/chat/completions", json=payload)
+            if response.status_code == 200:
+                data = response.json()
+                st.session_state.current_query["redacted"] = data["redacted_choices"][0]["message"]["content"]
+                st.session_state.current_query["desanitized"] = data["choices"][0]["message"]["content"]
+                st.session_state.current_query["status"] = FlowStatus.COMPLETED.value
+            else:
+                self._handle_error(f"LLM failed: {response.text}")
+        except Exception as e:
+            self._handle_error(f"LLM connection error: {e}")
 
     def _handle_error(self, message: str):
         st.session_state.current_query["status"] = FlowStatus.ERROR.value
