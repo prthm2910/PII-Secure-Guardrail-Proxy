@@ -13,10 +13,15 @@ class FlowStatus(Enum):
     COMPLETED = "completed"
     ERROR = "error"
 
+@st.cache_resource
+def get_async_client():
+    return httpx.AsyncClient(timeout=70.0)
+
 class FlowManager:
     def __init__(self):
         self.base_url = os.getenv("API_BASE_URL", "http://localhost:8000/proxy/v1")
         self.llm_model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+        self.client = get_async_client()
         
         if "current_query" not in st.session_state:
             self.reset_state()
