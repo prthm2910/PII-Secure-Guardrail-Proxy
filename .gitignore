@@ -8,9 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
+.env
 
 # Scratchpad
 scratchpad/
+tasks/
+
+# PyInstaller
+.pytest_cache/
 
 # Code Review Graph
 .code-review-graph
@@ -18,3 +23,9 @@ scratchpad/
 # IDEs
 .vscode/
 .idea/
+
+#Miscellenous
+.planning/
+.specify/
+.gemini/
+specs/
