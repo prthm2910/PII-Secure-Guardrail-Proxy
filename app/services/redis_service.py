@@ -31,7 +31,7 @@ class RedisService:
         data = self.client.get(key)
         if data:
             logger.debug(f"Req: {request_id} | Tokens retrieved from Redis")
-            return json.loads(data)
+            return json.loads(str(data))
         logger.warning(f"Req: {request_id} | No tokens found in Redis")
         return None
 
