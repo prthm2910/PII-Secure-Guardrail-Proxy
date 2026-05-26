@@ -35,7 +35,7 @@ class ForensicTester:
             {
                 "category": "Obfuscation",
                 "description": "Full-width Aadhaar Number",
-                "input": "\uff13\uff16\uff16\uff12\uff11\uff15\uff14\uff18\uff15\uff15\uff10\uff19", # ３６６２ １５４８ ５５０９
+                "input": "\uff13\uff16\uff16\uff12\uff11\uff15\uff14\uff18\uff15\uff15\uff10\uff19", # ３６６２１５４８５５０９
                 "expected": ["IN_AADHAAR"]
             },
             {
@@ -127,7 +127,7 @@ class ForensicTester:
             {
                 "category": "Encoding/Wrappers",
                 "description": "PII nested in raw JSON with escape characters",
-                "input": '{"payload": {"metadata": "User ID: ABCPK1234D", "aadhaar_ref": "366215485509"}}',     
+                "input": '{"payload": {"metadata": "User ID: ABCPK1234D", "aadhaar_ref": "366215485509"}}',
                 "expected": ["IN_PAN", "IN_AADHAAR"]
             },
             {
@@ -344,34 +344,34 @@ class ForensicTester:
     def run(self):
         results = []
         print(f"🕵️ Starting Forensic PII Testing (Full Pipeline)... ({len(self.test_cases)} cases)")
-
+        
         for case in self.test_cases:
             # Use the full sanitization pipeline to trigger Normalization
             sanitized_text, request_id, token_map, entity_summary, masked_entities = sanitization_service.sanitize(case['input'])
-
+            
             # Extract detected entities from the summary
             detected = list(entity_summary.keys())
-
+            
             passed = True
             # Check for missing expected entities
             for exp in case.get("expected", []):
                 if exp not in detected:
                     passed = False
                     break
-
+            
             # Check for unwanted entities (false positives)
             if passed: # Only check avoid if expectations met
                 for av in case.get("avoid", []):
                     if av in detected:
                         passed = False
                         break
-
+            
             results.append({
                 "case": case,
                 "detected": detected,
                 "passed": passed
             })
-
+        
         self.generate_report(results)
 
     def generate_report(self, results):
@@ -380,13 +380,74 @@ class ForensicTester:
             f.write("🕵️ PII ENGINE FORENSIC ANALYSIS REPORT\n")
             f.write(f"Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("====================================================\n\n")
-
+            
             total = len(results)
             passed_count = sum(1 for r in results if r["passed"])
+            vulnerability_rate = (1 - passed_count/total) * 100
 
             f.write(f"SUMMARY: {passed_count}/{total} Passed\n")
-            f.write("Vulnerability Rate: {:.2f}%\n".format((1 - passed_count/total)*100))
+            f.write(f"Vulnerability Rate: {vulnerability_rate:.2f}%\n")
             f.write("-" * 40 + "\n\n")
+
+            # --- PER-MODULE SCORING ---
+            f.write("### MODULE PERFORMANCE METRICS\n")
+            module_stats = {}
+            for res in results:
+                expected = res["case"].get("expected", [])
+                for ent in expected:
+                    if ent not in module_stats:
+                        module_stats[ent] = {"total": 0, "passed": 0}
+                    module_stats[ent]["total"] += 1
+                    if ent in res["detected"]:
+                        module_stats[ent]["passed"] += 1
+            
+            for mod, stats in sorted(module_stats.items(), key=lambda x: x[1]["passed"]/x[1]["total"]):
+                rate = (stats["passed"] / stats["total"]) * 100
+                status = "🔴 CRITICAL" if rate < 50 else "🟡 WEAK" if rate < 80 else "🟢 STABLE"
+                f.write(f"{status} | {mod:15} : {rate:6.2f}% ({stats['passed']}/{stats['total']})\n")
+            
+            f.write("\n" + "="*40 + "\n")
+            f.write("### STRATEGIC RESILIENCE ROADMAP\n")
+            f.write("="*40 + "\n")
+            
+            # Recommendation Logic based on failure categories
+            categories_failed = set()
+            for res in results:
+                if not res["passed"]:
+                    categories_failed.add(res["case"]["category"])
+            
+            recommendations = {
+                "Obfuscation": [
+                    "Implement NFKC Unicode Normalization in SanitizationService to resolve Homoglyph attacks.",
+                    "Add Zero-Width character removal to the pre-processing pipeline.",
+                    "Enhance Recognizer regexes to handle non-breaking spaces and soft hyphens."
+                ],
+                "Encoding/Wrappers": [
+                    "Implement recursive Base64/Hex/URL decoding in the pre-analysis layer.",
+                    "Add HTML tag stripping for payloads originating from web scrapers or rich text editors."
+                ],
+                "Collisions/Ambiguity": [
+                    "Strengthen checksum validation for Aadhaar and GSTIN before final classification.",
+                    "Refactor Demat ID detection to use temporal context filters (exclude matches appearing in timestamp patterns)."
+                ],
+                "Contextual Bypasses": [
+                    "Refactor BankAccountRecognizer to use dynamic proximity weighting for anchor keywords.",
+                    "Implement 'partial mask' detection to catch already-hidden PII that might be re-hydrated."
+                ],
+                "Semantic": [
+                    "Explore window-based aggregation to reassemble split PII strings across semantic boundaries.",
+                    "Add Hinglish/Language-agnostic keyword anchors for better cross-cultural detection."
+                ]
+            }
+
+            for cat in categories_failed:
+                f.write(f"\n[!] HIGH PRIORITY: {cat}\n")
+                for rec in recommendations.get(cat, ["Continue monitoring system behavior."]):
+                    f.write(f"  - {rec}\n")
+
+            f.write("\n" + "="*40 + "\n")
+            f.write("### DETAILED TEST LOG\n")
+            f.write("="*40 + "\n")
 
             current_cat = ""
             for res in results:
@@ -394,7 +455,7 @@ class ForensicTester:
                 if case["category"] != current_cat:
                     current_cat = case["category"]
                     f.write(f"\n### CATEGORY: {current_cat}\n")
-
+                
                 status = "✅ PASS" if res["passed"] else "❌ FAIL"
                 f.write(f"{status} | {case['description']}\n")
                 f.write(f"  Input   : {case['input'].replace('\n', '\\n')}\n")
