@@ -80,7 +80,7 @@ This project leverages the **`uv` workspace manager** for ultra-fast dependency 
 Clone your codebase and execute `uv sync` to compile the isolated virtual environment:
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/prthm2910/PII-Secure-Guardrail-Proxy.git
 cd pii-secure-guardrail-proxy
 
 # Build virtual environment and sync exact pinned locking structures
